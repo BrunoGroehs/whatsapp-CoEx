@@ -346,6 +346,7 @@
             signupData = event.data.data;
           } else if (event.data.event === 'CANCEL') {
             console.log('❌ Signup cancelado pelo usuário');
+            signupCompleted = true; // Marcar como completado para evitar mensagem de erro
             showStatus('Cadastro cancelado', 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
@@ -354,6 +355,7 @@
             return;
           } else if (event.data.event === 'ERROR') {
             console.error('❌ Erro reportado pelo Embedded Signup:', event.data);
+            signupCompleted = true; // Marcar como completado para evitar mensagem de erro duplicada
             showStatus('❌ Erro: ' + (event.data.error || 'Erro desconhecido'), 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
@@ -383,6 +385,10 @@
             code: signupData.code ? 'presente' : 'ausente',
             data_completo: signupData
           });
+          
+          // Marcar como completado IMEDIATAMENTE ao receber dados válidos
+          signupCompleted = true;
+          console.log('✅ Flag signupCompleted = true');
           
           // Enviar dados para o backend
           console.log('📤 Enviando dados para /auth/callback...');
@@ -437,15 +443,23 @@
       console.log('👂 Event listener adicionado');
       window.addEventListener('message', messageHandler);
 
+      // Flag para rastrear se houve sucesso
+      let signupCompleted = false;
+
       // Verificar se popup foi fechado manualmente
       const checkPopup = setInterval(function() {
         if (popup.closed) {
           clearInterval(checkPopup);
           window.removeEventListener('message', messageHandler);
-          if (button.disabled) {
+          
+          // Só mostra erro se NÃO houve sucesso
+          if (!signupCompleted && button.disabled) {
+            console.log('⚠️ Popup fechado sem completar o signup');
             showStatus('Popup fechado. Tente novamente se necessário.', 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
+          } else if (signupCompleted) {
+            console.log('✅ Popup fechado após sucesso - tudo OK');
           }
         }
       }, 500);

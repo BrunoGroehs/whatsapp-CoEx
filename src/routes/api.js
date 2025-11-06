@@ -4,6 +4,16 @@ const { getBusinessData, getAllBusinesses } = require('../utils/business');
 const { sendWhatsAppMessage } = require('../utils/whatsapp');
 
 /**
+ * Retorna as configurações públicas do .env
+ */
+router.get('/config', (req, res) => {
+  res.json({
+    appId: process.env.FACEBOOK_APP_ID,
+    configId: process.env.FACEBOOK_CONFIG_ID
+  });
+});
+
+/**
  * Lista todos os negócios cadastrados
  */
 router.get('/businesses', async (req, res) => {

@@ -235,10 +235,29 @@
 
   <!-- Facebook SDK -->
   <script>
-    // Configurações - substitua com suas credenciais
-    const FACEBOOK_APP_ID = 'SEU_APP_ID_AQUI';
-    const FACEBOOK_CONFIG_ID = 'SEU_CONFIG_ID_AQUI';
+    // Configurações carregadas do servidor
+    let FACEBOOK_APP_ID = '';
+    let FACEBOOK_CONFIG_ID = '';
     const REDIRECT_URI = window.location.origin + '/auth/callback';
+
+    // Buscar configurações do servidor
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(config => {
+        FACEBOOK_APP_ID = config.appId;
+        FACEBOOK_CONFIG_ID = config.configId;
+        
+        // Verificar se as credenciais foram configuradas
+        if (!FACEBOOK_APP_ID || !FACEBOOK_CONFIG_ID) {
+          showStatus('⚠️ ATENÇÃO: Configure as credenciais do Facebook no arquivo .env', 'error');
+          document.getElementById('signup-button').disabled = true;
+        }
+      })
+      .catch(error => {
+        console.error('Erro ao carregar configurações:', error);
+        showStatus('⚠️ Erro ao carregar configurações. Recarregue a página.', 'error');
+        document.getElementById('signup-button').disabled = true;
+      });
 
     // Inicializa o Facebook SDK
     window.fbAsyncInit = function() {
@@ -355,14 +374,6 @@
       if (event.data.type === 'signup_success') {
         showStatus('✅ Cadastro concluído com sucesso!', 'success');
         console.log('Business Data:', event.data.data);
-      }
-    });
-
-    // Verifica se as credenciais foram configuradas
-    window.addEventListener('load', function() {
-      if (FACEBOOK_APP_ID === 'SEU_APP_ID_AQUI' || FACEBOOK_CONFIG_ID === 'SEU_CONFIG_ID_AQUI') {
-        showStatus('⚠️ ATENÇÃO: Configure as credenciais do Facebook no arquivo index.html', 'error');
-        document.getElementById('signup-button').disabled = true;
       }
     });
   </script>

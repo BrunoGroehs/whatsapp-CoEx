@@ -233,6 +233,21 @@
     </div>
   </div>
 
+  <!-- Facebook SDK -->
+  <script>
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v21.0'
+      });
+      
+      console.log('✅ Facebook SDK inicializado');
+    };
+  </script>
+  <script async defer crossorigin="anonymous" src="https://connect.facebook.net/pt_BR/sdk.js"></script>
+
   <!-- Script principal -->
   <script>
     // Configurações carregadas do servidor
@@ -252,6 +267,11 @@
           document.getElementById('signup-button').disabled = true;
         } else {
           console.log('✅ Configurações carregadas:', { appId: FACEBOOK_APP_ID, configId: FACEBOOK_CONFIG_ID });
+          
+          // Inicializar SDK após carregar configurações
+          if (typeof FB !== 'undefined') {
+            window.fbAsyncInit();
+          }
         }
       })
       .catch(error => {
@@ -271,67 +291,34 @@
         return;
       }
       
+      // Verificar se SDK está carregado
+      if (typeof FB === 'undefined') {
+        showStatus('⚠️ Aguarde o carregamento do Facebook SDK...', 'error');
+        return;
+      }
+      
       button.disabled = true;
       button.textContent = '⏳ Carregando...';
       
       // Esconde mensagens anteriores
       status.style.display = 'none';
 
-      console.log('🚀 Iniciando Embedded Signup com CoExistence...');
+      console.log('� Iniciando Embedded Signup com Facebook SDK...');
 
-      // URL do Embedded Signup com CoExistence (versão v3)
-      const signupUrl = new URL('https://business.facebook.com/messaging/whatsapp/onboard/');
-      signupUrl.searchParams.append('app_id', FACEBOOK_APP_ID);
-      signupUrl.searchParams.append('config_id', FACEBOOK_CONFIG_ID);
-      
-      // Extras com configuração de CoExistence v3
-      const extras = {
-        featureType: 'whatsapp_business_app_onboarding', // ← CORRETO para CoExistence!
-        sessionInfoVersion: '3'
-      };
-      signupUrl.searchParams.append('extras', JSON.stringify(extras));
-      
-      // IMPORTANTE: Adiciona redirect_uri como fallback
-      signupUrl.searchParams.append('redirect_uri', window.location.origin + '/auth/callback');
-
-      console.log('📍 URL Embedded Signup:', signupUrl.toString());
-
-      // Abrir popup do Embedded Signup
-      const width = 600;
-      const height = 800;
-      const left = (window.screen.width - width) / 2;
-      const top = (window.screen.height - height) / 2;
-      
-      const popup = window.open(
-        signupUrl.toString(),
-        'whatsapp_signup',
-        `width=${width},height=${height},left=${left},top=${top},toolbar=no,location=no,status=no,menubar=no,scrollbars=yes,resizable=yes`
-      );
-
-      if (!popup) {
-        showStatus('❌ Pop-up bloqueado! Permita pop-ups para este site.', 'error');
-        button.disabled = false;
-        button.textContent = '🚀 Iniciar Cadastro';
-        return;
-      }
-
-      // Escutar mensagens do popup - VERSÃO ROBUSTA
-      const messageHandler = function(event) {
-        // Log TUDO que chegar para debugging
-        console.log('🔔 QUALQUER evento recebido:', {
+      // Configuração do Embedded Signup v3 com CoExistence
+      const sessionInfoListener = function(event) {
+        // Log completo para debugging
+        console.log('🔔 Evento recebido do Facebook SDK:', {
           origin: event.origin,
           data: event.data,
           type: typeof event.data,
-          keys: event.data ? Object.keys(event.data) : 'null',
           timestamp: new Date().toISOString()
         });
 
-        // Verificar origem (aceita tanto business.facebook.com quanto www.facebook.com)
+        // Verificar origem
         if (!event.origin.includes('facebook.com')) {
-          console.warn('⚠️ Origem não confiável, mas registrando:', event.origin);
-          // NÃO retorna aqui - vamos processar mesmo assim para debug
-        } else {
-          console.log('✅ Origem válida, processando mensagem...');
+          console.warn('⚠️ Origem não confiável:', event.origin);
+          return;
         }
 
         // Tentar múltiplos formatos de evento
@@ -339,60 +326,45 @@
 
         // Formato 1: WA_EMBEDDED_SIGNUP padrão (v2)
         if (event.data && event.data.type === 'WA_EMBEDDED_SIGNUP') {
-          console.log('📬 Tipo WA_EMBEDDED_SIGNUP detectado, evento:', event.data.event);
+          console.log('📬 Tipo WA_EMBEDDED_SIGNUP detectado');
           
           if (event.data.event === 'FINISH') {
             console.log('✅ Formato 1: WA_EMBEDDED_SIGNUP FINISH');
             signupData = event.data.data;
           } else if (event.data.event === 'CANCEL') {
             console.log('❌ Signup cancelado pelo usuário');
-            signupCompleted = true; // Marcar como completado para evitar mensagem de erro
             showStatus('Cadastro cancelado', 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
-            popup.close();
-            window.removeEventListener('message', messageHandler);
+            window.removeEventListener('message', sessionInfoListener);
             return;
           } else if (event.data.event === 'ERROR') {
-            console.error('❌ Erro reportado pelo Embedded Signup:', event.data);
-            signupCompleted = true; // Marcar como completado para evitar mensagem de erro duplicada
+            console.error('❌ Erro reportado:', event.data);
             showStatus('❌ Erro: ' + (event.data.error || 'Erro desconhecido'), 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
+            window.removeEventListener('message', sessionInfoListener);
             return;
-          } else {
-            console.log('ℹ️ Evento WA_EMBEDDED_SIGNUP desconhecido:', event.data.event);
           }
         }
         
         // Formato 2: Evento direto sem wrapper type (v3)
         else if (event.data && (event.data.event === 'FINISH' || event.data.event === 'finish')) {
-          console.log('✅ Formato 2: Evento FINISH direto detectado');
+          console.log('✅ Formato 2: Evento FINISH direto');
           signupData = event.data.data || event.data;
         }
         
         // Formato 3: Dados diretos sem event wrapper (v3 alternativo)
         else if (event.data && event.data.phone_number_id && event.data.waba_id) {
-          console.log('✅ Formato 3: Dados diretos detectados (sem wrapper)');
+          console.log('✅ Formato 3: Dados diretos detectados');
           signupData = event.data;
         }
 
         // Se encontrou dados válidos, processar
         if (signupData && (signupData.phone_number_id || signupData.waba_id)) {
-          console.log('📦 Dados de signup válidos encontrados:', {
-            phone_number_id: signupData.phone_number_id,
-            waba_id: signupData.waba_id,
-            code: signupData.code ? 'presente' : 'ausente',
-            data_completo: signupData
-          });
-          
-          // Marcar como completado IMEDIATAMENTE ao receber dados válidos
-          signupCompleted = true;
-          console.log('✅ Flag signupCompleted = true');
+          console.log('📦 Dados válidos encontrados:', signupData);
           
           // Enviar dados para o backend
-          console.log('📤 Enviando dados para /auth/callback...');
-          
           fetch('/auth/callback', {
             method: 'POST',
             headers: {
@@ -404,19 +376,14 @@
               code: signupData.code || null
             })
           })
-          .then(res => {
-            console.log('📥 Resposta recebida, status:', res.status);
-            return res.json();
-          })
+          .then(res => res.json())
           .then(result => {
-            console.log('📊 Resultado processado:', result);
+            console.log('📊 Resultado:', result);
             
             if (result.success) {
               showStatus('✅ WhatsApp conectado com sucesso!', 'success');
-              console.log('✅ Conta configurada:', result);
             } else {
               showStatus('❌ Erro ao processar: ' + result.message, 'error');
-              console.error('❌ Erro do servidor:', result);
             }
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
@@ -428,41 +395,46 @@
             button.textContent = '🚀 Iniciar Cadastro';
           });
           
-          // Fechar popup
-          console.log('🔒 Fechando popup...');
-          popup.close();
-          
           // Remover listener
-          window.removeEventListener('message', messageHandler);
-          console.log('✅ Listener removido');
-        } else if (event.data) {
-          console.log('ℹ️ Evento recebido mas sem dados válidos de signup:', event.data);
+          window.removeEventListener('message', sessionInfoListener);
         }
       };
 
+      // Adicionar listener para eventos do Embedded Signup
+      window.addEventListener('message', sessionInfoListener);
       console.log('👂 Event listener adicionado');
-      window.addEventListener('message', messageHandler);
 
-      // Flag para rastrear se houve sucesso
-      let signupCompleted = false;
-
-      // Verificar se popup foi fechado manualmente
-      const checkPopup = setInterval(function() {
-        if (popup.closed) {
-          clearInterval(checkPopup);
-          window.removeEventListener('message', messageHandler);
-          
-          // Só mostra erro se NÃO houve sucesso
-          if (!signupCompleted && button.disabled) {
-            console.log('⚠️ Popup fechado sem completar o signup');
-            showStatus('Popup fechado. Tente novamente se necessário.', 'error');
-            button.disabled = false;
-            button.textContent = '🚀 Iniciar Cadastro';
-          } else if (signupCompleted) {
-            console.log('✅ Popup fechado após sucesso - tudo OK');
-          }
+      // Usar FB.login com configuração de Embedded Signup
+      console.log('🔐 Iniciando FB.login com Embedded Signup...');
+      
+      FB.login(function(response) {
+        console.log('� Resposta do FB.login:', response);
+        
+        if (response.authResponse) {
+          console.log('✅ Autenticação bem-sucedida');
+          // O callback virá via postMessage, já tratado no listener acima
+        } else {
+          console.log('❌ Autenticação cancelada ou falhou');
+          showStatus('Autenticação cancelada', 'error');
+          button.disabled = false;
+          button.textContent = '🚀 Iniciar Cadastro';
+          window.removeEventListener('message', sessionInfoListener);
         }
-      }, 500);
+      }, {
+        config_id: FACEBOOK_CONFIG_ID,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: {
+          feature: 'whatsapp_embedded_signup',
+          setup: {
+            // CoExistence ativado
+            phone_number_setup: {
+              phone_number_id: null  // null = permitir seleção de número existente
+            }
+          },
+          sessionInfoVersion: 3  // Versão 3 com CoExistence
+        }
+      });
     }
 
     // Função para mostrar mensagens de status

@@ -1,10 +1,9 @@
 ﻿services:
   whatsapp-app:
     build: .
-    container_name: whatsapp-coex-app
     restart: unless-stopped
-    ports:
-      - "3000:3000"
+    expose:
+      - 3000
     environment:
       - NODE_ENV=production
       - PORT=3000

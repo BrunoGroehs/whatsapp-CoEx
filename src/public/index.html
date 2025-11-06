@@ -283,39 +283,20 @@
       const button = document.getElementById('signup-button');
       const status = document.getElementById('status');
       
+      // Verificar se as configurações foram carregadas
+      if (!FACEBOOK_APP_ID || !FACEBOOK_CONFIG_ID) {
+        showStatus('⚠️ Aguarde o carregamento das configurações...', 'error');
+        return;
+      }
+      
       button.disabled = true;
       button.textContent = '⏳ Carregando...';
       
       // Esconde mensagens anteriores
       status.style.display = 'none';
 
-      // Opções do Embedded Signup com CoExistence habilitado
-      const signupOptions = {
-        // Configuration ID do seu app
-        config_id: FACEBOOK_CONFIG_ID,
-        
-        // Permissões necessárias
-        scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
-        
-        // URI de redirecionamento
-        redirect_uri: REDIRECT_URI,
-        
-        // State para validação (opcional)
-        state: Math.random().toString(36).substring(7),
-        
-        // Extras - incluindo configuração de CoExistence
-        extras: {
-          // Habilita o fluxo de CoExistence para números já em uso
-          feature: 'whatsapp_embedded_signup',
-          version: 2,
-          
-          // Configurações adicionais para CoExistence
-          setup: {
-            // Permite uso de números do WhatsApp Business App
-            coexistent_onboarding: true
-          }
-        }
-      };
+      // State para validação
+      const state = Math.random().toString(36).substring(7);
 
       // Callback de sucesso
       function callback(response) {
@@ -327,7 +308,7 @@
           // Redireciona para o callback com os dados
           const params = new URLSearchParams({
             code: code,
-            state: signupOptions.state
+            state: state
           });
 
           // Se disponível, adiciona WABA ID e Phone Number ID
@@ -350,9 +331,19 @@
         }
       }
 
-      // Lança o fluxo de Embedded Signup
+      // Lança o fluxo de Embedded Signup usando FB.login com response_type=code
       try {
-        FB.login(callback, signupOptions);
+        FB.login(callback, {
+          config_id: FACEBOOK_CONFIG_ID,
+          response_type: 'code',
+          override_default_response_type: true,
+          extras: {
+            setup: {
+              // Permite CoExistence - usar números do WhatsApp Business App
+              coexistent_onboarding: true
+            }
+          }
+        });
       } catch (error) {
         console.error('Error launching signup:', error);
         showStatus('Erro ao iniciar o cadastro: ' + error.message, 'error');

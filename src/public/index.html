@@ -315,22 +315,38 @@
 
       // Escutar mensagens do popup
       const messageHandler = function(event) {
+        console.log('🔔 Evento recebido:', {
+          origin: event.origin,
+          data: event.data,
+          timestamp: new Date().toISOString()
+        });
+
         // Verificar origem (aceita tanto business.facebook.com quanto www.facebook.com)
         if (!event.origin.includes('facebook.com')) {
+          console.warn('⚠️ Origem não confiável, ignorando:', event.origin);
           return;
         }
 
-        console.log('📨 Mensagem recebida do popup:', event.data);
+        console.log('✅ Origem válida, processando mensagem...');
 
         // Verificar se é callback de sucesso do Embedded Signup
         if (event.data && event.data.type === 'WA_EMBEDDED_SIGNUP') {
+          console.log('📬 Tipo WA_EMBEDDED_SIGNUP detectado, evento:', event.data.event);
+          
           if (event.data.event === 'FINISH') {
             const data = event.data.data;
             
-            console.log('✅ Embedded Signup concluído!', data);
+            console.log('✅ Embedded Signup concluído!', {
+              phone_number_id: data.phone_number_id,
+              waba_id: data.waba_id,
+              code: data.code ? 'presente' : 'ausente',
+              data_completo: data
+            });
             
             // Enviar dados para o backend
             if (data.phone_number_id && data.waba_id) {
+              console.log('📤 Enviando dados para /auth/callback...');
+              
               fetch('/auth/callback', {
                 method: 'POST',
                 headers: {
@@ -342,44 +358,65 @@
                   code: data.code || null
                 })
               })
-              .then(res => res.json())
+              .then(res => {
+                console.log('📥 Resposta recebida, status:', res.status);
+                return res.json();
+              })
               .then(result => {
+                console.log('📊 Resultado processado:', result);
+                
                 if (result.success) {
                   showStatus('✅ WhatsApp conectado com sucesso!', 'success');
                   console.log('✅ Conta configurada:', result);
                 } else {
                   showStatus('❌ Erro ao processar: ' + result.message, 'error');
+                  console.error('❌ Erro do servidor:', result);
                 }
                 button.disabled = false;
                 button.textContent = '🚀 Iniciar Cadastro';
               })
               .catch(error => {
+                console.error('❌ Erro na requisição:', error);
                 showStatus('❌ Erro na requisição: ' + error.message, 'error');
                 button.disabled = false;
                 button.textContent = '🚀 Iniciar Cadastro';
               });
             } else {
+              console.error('❌ Dados incompletos:', data);
               showStatus('❌ Dados incompletos recebidos', 'error');
               button.disabled = false;
               button.textContent = '🚀 Iniciar Cadastro';
             }
             
             // Fechar popup
+            console.log('🔒 Fechando popup...');
             popup.close();
             
             // Remover listener
             window.removeEventListener('message', messageHandler);
+            console.log('✅ Listener removido');
+            
           } else if (event.data.event === 'CANCEL') {
-            console.log('❌ Signup cancelado');
+            console.log('❌ Signup cancelado pelo usuário');
             showStatus('Cadastro cancelado', 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
             popup.close();
             window.removeEventListener('message', messageHandler);
+          } else if (event.data.event === 'ERROR') {
+            console.error('❌ Erro reportado pelo Embedded Signup:', event.data);
+            showStatus('❌ Erro: ' + (event.data.error || 'Erro desconhecido'), 'error');
+            button.disabled = false;
+            button.textContent = '🚀 Iniciar Cadastro';
+          } else {
+            console.log('ℹ️ Evento desconhecido:', event.data.event);
           }
+        } else if (event.data) {
+          console.log('ℹ️ Mensagem de tipo diferente:', event.data.type || 'sem tipo');
         }
       };
 
+      console.log('👂 Event listener adicionado');
       window.addEventListener('message', messageHandler);
 
       // Verificar se popup foi fechado manualmente

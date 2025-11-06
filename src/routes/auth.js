@@ -193,45 +193,91 @@ router.get('/callback', async (req, res) => {
  */
 router.post('/callback', async (req, res) => {
   try {
-    console.log('📨 POST callback received');
-    console.log('Body:', req.body);
+    console.log('\n========================================');
+    console.log('📨 POST /auth/callback recebido');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+    console.log('📋 Headers:', JSON.stringify(req.headers, null, 2));
+    console.log('📦 Body completo:', JSON.stringify(req.body, null, 2));
+    console.log('========================================\n');
 
     const { phone_number_id, waba_id, code } = req.body;
 
     if (!phone_number_id || !waba_id) {
+      console.error('❌ Dados obrigatórios ausentes:', {
+        phone_number_id: phone_number_id || 'AUSENTE',
+        waba_id: waba_id || 'AUSENTE'
+      });
+      
       return res.status(400).json({
         success: false,
-        message: 'Missing phone_number_id or waba_id'
+        message: 'Missing phone_number_id or waba_id',
+        received: { phone_number_id, waba_id, code }
       });
     }
+
+    console.log('✅ Dados obrigatórios presentes');
+    console.log('📞 Phone Number ID:', phone_number_id);
+    console.log('🏢 WABA ID:', waba_id);
+    console.log('🔑 Code:', code ? `presente (${code.substring(0, 10)}...)` : 'AUSENTE');
 
     let accessToken = null;
 
     // Se tiver código, trocar por token
     if (code) {
-      console.log('🔄 Exchanging code for access token...');
-      const tokenResponse = await exchangeCodeForToken(code);
-      accessToken = tokenResponse.access_token;
-      console.log('✅ Access token obtained');
+      console.log('\n🔄 Iniciando troca de código por token...');
+      console.log('📍 Endpoint: https://graph.facebook.com/v22.0/oauth/access_token');
+      
+      try {
+        const tokenResponse = await exchangeCodeForToken(code);
+        accessToken = tokenResponse.access_token;
+        
+        console.log('✅ Token obtido com sucesso!');
+        console.log('🔑 Token (primeiros 20 chars):', accessToken.substring(0, 20) + '...');
+        console.log('⏱️ Expira em:', tokenResponse.expires_in || 'não informado');
+      } catch (tokenError) {
+        console.error('❌ ERRO ao trocar código por token:', tokenError.message);
+        console.error('📊 Detalhes do erro:', tokenError);
+        
+        return res.status(500).json({
+          success: false,
+          message: 'Falha ao trocar código por token: ' + tokenError.message,
+          error: tokenError.toString()
+        });
+      }
+    } else {
+      console.warn('⚠️ Nenhum código fornecido, prosseguindo sem token');
     }
 
     // Salvar dados do negócio
+    console.log('\n💾 Salvando dados do negócio...');
     const businessData = {
       accessToken: accessToken,
       wabaId: waba_id,
       phoneNumberId: phone_number_id
     };
 
-    await saveBusinessData(businessData);
+    try {
+      await saveBusinessData(businessData);
+      console.log('✅ Dados salvos com sucesso');
+    } catch (saveError) {
+      console.error('❌ ERRO ao salvar dados:', saveError.message);
+      console.error('📊 Detalhes:', saveError);
+    }
 
     // Inscrever nos webhooks
     if (accessToken && waba_id) {
+      console.log('\n📡 Inscrevendo nos webhooks...');
       try {
         await subscribeToWebhooks(waba_id, accessToken);
+        console.log('✅ Webhooks inscritos com sucesso');
       } catch (webhookError) {
-        console.error('Erro ao inscrever webhooks:', webhookError.message);
+        console.error('⚠️ Erro ao inscrever webhooks (não crítico):', webhookError.message);
       }
+    } else {
+      console.log('⏭️ Pulando inscrição de webhooks (sem token ou waba_id)');
     }
+
+    console.log('\n✅ Processamento concluído com sucesso!\n');
 
     res.json({
       success: true,
@@ -244,10 +290,15 @@ router.post('/callback', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('❌ Error in POST callback:', error);
+    console.error('\n❌❌❌ ERRO CRÍTICO no POST callback ❌❌❌');
+    console.error('Mensagem:', error.message);
+    console.error('Stack:', error.stack);
+    console.error('========================================\n');
+    
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
+      error: error.toString()
     });
   }
 });
@@ -257,6 +308,11 @@ router.post('/callback', async (req, res) => {
  */
 async function exchangeCodeForToken(code) {
   try {
+    console.log('🔐 Preparando requisição de troca de token...');
+    console.log('Client ID:', process.env.FACEBOOK_APP_ID);
+    console.log('Client Secret:', process.env.FACEBOOK_APP_SECRET ? 'configurado' : 'AUSENTE');
+    console.log('Code (primeiros 20 chars):', code.substring(0, 20) + '...');
+    
     const response = await axios.post('https://graph.facebook.com/v22.0/oauth/access_token', {
       client_id: process.env.FACEBOOK_APP_ID,
       client_secret: process.env.FACEBOOK_APP_SECRET,
@@ -264,10 +320,19 @@ async function exchangeCodeForToken(code) {
       code: code
     });
 
+    console.log('✅ Resposta recebida da API do Facebook');
+    console.log('Status:', response.status);
+    console.log('Data:', response.data);
+
     return response.data;
   } catch (error) {
-    console.error('Error exchanging code for token:', error.response?.data || error.message);
-    throw new Error('Failed to exchange authorization code for access token');
+    console.error('❌ Erro ao trocar código por token');
+    console.error('Status:', error.response?.status);
+    console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('Message:', error.message);
+    
+    throw new Error('Failed to exchange authorization code for access token: ' + 
+      (error.response?.data?.error?.message || error.message));
   }
 }
 

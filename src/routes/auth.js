@@ -189,16 +189,79 @@ router.get('/callback', async (req, res) => {
 });
 
 /**
+ * POST /callback - Recebe dados do popup do Embedded Signup (v3)
+ */
+router.post('/callback', async (req, res) => {
+  try {
+    console.log('📨 POST callback received');
+    console.log('Body:', req.body);
+
+    const { phone_number_id, waba_id, code } = req.body;
+
+    if (!phone_number_id || !waba_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing phone_number_id or waba_id'
+      });
+    }
+
+    let accessToken = null;
+
+    // Se tiver código, trocar por token
+    if (code) {
+      console.log('🔄 Exchanging code for access token...');
+      const tokenResponse = await exchangeCodeForToken(code);
+      accessToken = tokenResponse.access_token;
+      console.log('✅ Access token obtained');
+    }
+
+    // Salvar dados do negócio
+    const businessData = {
+      accessToken: accessToken,
+      wabaId: waba_id,
+      phoneNumberId: phone_number_id
+    };
+
+    await saveBusinessData(businessData);
+
+    // Inscrever nos webhooks
+    if (accessToken && waba_id) {
+      try {
+        await subscribeToWebhooks(waba_id, accessToken);
+      } catch (webhookError) {
+        console.error('Erro ao inscrever webhooks:', webhookError.message);
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'WhatsApp conectado com sucesso!',
+      data: {
+        wabaId: waba_id,
+        phoneNumberId: phone_number_id,
+        hasToken: !!accessToken
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in POST callback:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+/**
  * Troca o código de autorização por um token de acesso
  */
 async function exchangeCodeForToken(code) {
   try {
-    const response = await axios.get('https://graph.facebook.com/v21.0/oauth/access_token', {
-      params: {
-        client_id: process.env.FACEBOOK_APP_ID,
-        client_secret: process.env.FACEBOOK_APP_SECRET,
-        code: code
-      }
+    const response = await axios.post('https://graph.facebook.com/v22.0/oauth/access_token', {
+      client_id: process.env.FACEBOOK_APP_ID,
+      client_secret: process.env.FACEBOOK_APP_SECRET,
+      grant_type: 'authorization_code',
+      code: code
     });
 
     return response.data;

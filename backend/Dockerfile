@@ -1,20 +1,20 @@
 # Backend Dockerfile
 FROM node:18-alpine
 
-# Definir diretÃ³rio de trabalho
+# Definir diretório de trabalho
 WORKDIR /app
 
-# Copiar arquivos de dependÃªncias
+# Copiar arquivos de dependências
 COPY package*.json ./
 
-# Instalar dependÃªncias
-RUN npm ci --only=production
+# Instalar dependências (usar npm install ao invés de npm ci)
+RUN npm install --production --no-package-lock
 
-# Copiar cÃ³digo fonte
+# Copiar código fonte
 COPY . .
 
 # Expor porta
 EXPOSE 3000
 
-# Comando de inicializaÃ§Ã£o
+# Comando de inicialização
 CMD ["node", "src/index.js"]

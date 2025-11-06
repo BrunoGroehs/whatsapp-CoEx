@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro WhatsApp Business - CoExistence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      max-width: 600px;
+      width: 100%;
+      padding: 40px;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .logo svg {
+      width: 80px;
+      height: 80px;
+      fill: #25D366;
+    }
+
+    h1 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 16px;
+    }
+
+    .info-box {
+      background: #f8f9fa;
+      border-left: 4px solid #25D366;
+      padding: 15px;
+      margin-bottom: 30px;
+      border-radius: 5px;
+    }
+
+    .info-box h3 {
+      color: #25D366;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    .info-box ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .info-box li {
+      padding: 5px 0;
+      color: #555;
+      font-size: 14px;
+    }
+
+    .info-box li:before {
+      content: "✓ ";
+      color: #25D366;
+      font-weight: bold;
+      margin-right: 5px;
+    }
+
+    .button-container {
+      text-align: center;
+      margin-top: 30px;
+    }
+
+    #signup-button {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
+    }
+
+    #signup-button:hover {
+      background: #20bd5a;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
+    }
+
+    #signup-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: #999;
+      font-size: 12px;
+    }
+
+    .coexistence-badge {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 10px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      text-align: center;
+      color: #856404;
+      font-size: 14px;
+    }
+
+    .coexistence-badge strong {
+      color: #25D366;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 20px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      #signup-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">
+      <!-- WhatsApp Logo SVG -->
+      <svg viewBox="0 0 175.216 175.552">
+        <defs>
+          <linearGradient id="b" x1="85.915" x2="86.535" y1="32.567" y2="137.092" gradientUnits="userSpaceOnUse">
+            <stop offset="0" stop-color="#57d163"/>
+            <stop offset="1" stop-color="#23b33a"/>
+          </linearGradient>
+        </defs>
+        <path fill="url(#b)" d="M87.184 25.227c-33.733 0-61.166 27.423-61.178 61.13a60.98 60.98 0 0 0 9.349 32.535l1.455 2.312-6.179 22.559 23.146-6.069 2.235 1.324c9.387 5.571 20.15 8.518 31.126 8.524h.023c33.707 0 61.14-27.426 61.153-61.135a60.75 60.75 0 0 0-17.895-43.251 60.75 60.75 0 0 0-43.235-17.929z"/>
+        <path fill="#fff" d="M68.772 55.603c-1.378-3.061-2.828-3.123-4.137-3.176l-3.524-.043c-1.226 0-3.218.46-4.902 2.3s-6.435 6.287-6.435 15.332 6.588 17.785 7.506 19.013 12.718 20.381 31.405 27.75c15.529 6.124 18.689 4.906 22.061 4.6s10.877-4.447 12.408-8.74 1.532-7.971 1.073-8.74-1.685-1.226-3.525-2.146-10.877-5.367-12.562-5.981-2.91-.919-4.137.921-4.746 5.979-5.819 7.206-2.144 1.381-3.984.462-7.76-2.861-14.784-9.124c-5.465-4.873-9.154-10.891-10.228-12.73s-.114-2.835.808-3.751c.825-.824 1.838-2.147 2.759-3.22s1.224-1.84 1.836-3.065.307-2.301-.153-3.22-4.032-10.011-5.666-13.647"/>
+      </svg>
+    </div>
+
+    <h1>WhatsApp Business Platform</h1>
+    <p class="subtitle">Cadastro Incorporado com CoExistence</p>
+
+    <div class="coexistence-badge">
+      <strong>✨ CoExistence Habilitado</strong><br>
+      Use seu número existente do WhatsApp Business App
+    </div>
+
+    <div class="info-box">
+      <h3>📋 O que você receberá:</h3>
+      <ul>
+        <li>WABA ID (WhatsApp Business Account ID)</li>
+        <li>Phone Number ID do seu número</li>
+        <li>Token de acesso à API</li>
+        <li>Acesso completo à API do WhatsApp Business</li>
+      </ul>
+    </div>
+
+    <div class="info-box">
+      <h3>🔐 Como funciona:</h3>
+      <ul>
+        <li>Clique no botão abaixo</li>
+        <li>Faça login com sua conta Facebook/Meta</li>
+        <li>Aceite as permissões necessárias</li>
+        <li>Selecione ou crie seu WhatsApp Business Account</li>
+        <li>Use seu número existente do WhatsApp Business App</li>
+        <li>Pronto! Você receberá as credenciais da API</li>
+      </ul>
+    </div>
+
+    <div class="button-container">
+      <button id="signup-button" onclick="launchWhatsAppSignup()">
+        🚀 Iniciar Cadastro
+      </button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="footer">
+      <p>Powered by Meta WhatsApp Business Platform</p>
+      <p>© 2025 - Todos os direitos reservados</p>
+    </div>
+  </div>
+
+  <!-- Facebook SDK -->
+  <script>
+    // Configurações - substitua com suas credenciais
+    const FACEBOOK_APP_ID = 'SEU_APP_ID_AQUI';
+    const FACEBOOK_CONFIG_ID = 'SEU_CONFIG_ID_AQUI';
+    const REDIRECT_URI = window.location.origin + '/auth/callback';
+
+    // Inicializa o Facebook SDK
+    window.fbAsyncInit = function() {
+      FB.init({
+        appId: FACEBOOK_APP_ID,
+        cookie: true,
+        xfbml: true,
+        version: 'v21.0'
+      });
+    };
+
+    // Carrega o SDK do Facebook
+    (function(d, s, id) {
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) return;
+      js = d.createElement(s); js.id = id;
+      js.src = "https://connect.facebook.net/pt_BR/sdk.js";
+      fjs.parentNode.insertBefore(js, fjs);
+    }(document, 'script', 'facebook-jssdk'));
+
+    // Função para lançar o Embedded Signup
+    function launchWhatsAppSignup() {
+      const button = document.getElementById('signup-button');
+      const status = document.getElementById('status');
+      
+      button.disabled = true;
+      button.textContent = '⏳ Carregando...';
+      
+      // Esconde mensagens anteriores
+      status.style.display = 'none';
+
+      // Opções do Embedded Signup com CoExistence habilitado
+      const signupOptions = {
+        // Configuration ID do seu app
+        config_id: FACEBOOK_CONFIG_ID,
+        
+        // Permissões necessárias
+        scope: 'business_management,whatsapp_business_management,whatsapp_business_messaging',
+        
+        // URI de redirecionamento
+        redirect_uri: REDIRECT_URI,
+        
+        // State para validação (opcional)
+        state: Math.random().toString(36).substring(7),
+        
+        // Extras - incluindo configuração de CoExistence
+        extras: {
+          // Habilita o fluxo de CoExistence para números já em uso
+          feature: 'whatsapp_embedded_signup',
+          version: 2,
+          
+          // Configurações adicionais para CoExistence
+          setup: {
+            // Permite uso de números do WhatsApp Business App
+            coexistent_onboarding: true
+          }
+        }
+      };
+
+      // Callback de sucesso
+      function callback(response) {
+        console.log('Embedded Signup Response:', response);
+        
+        if (response.authResponse) {
+          const code = response.authResponse.code;
+          
+          // Redireciona para o callback com os dados
+          const params = new URLSearchParams({
+            code: code,
+            state: signupOptions.state
+          });
+
+          // Se disponível, adiciona WABA ID e Phone Number ID
+          if (response.authResponse.waba_id) {
+            params.append('waba_id', response.authResponse.waba_id);
+          }
+          if (response.authResponse.phone_number_id) {
+            params.append('phone_number_id', response.authResponse.phone_number_id);
+          }
+          if (response.authResponse.business_id) {
+            params.append('business_id', response.authResponse.business_id);
+          }
+
+          window.location.href = `/auth/callback?${params.toString()}`;
+        } else {
+          console.error('Signup cancelled or failed');
+          showStatus('Cadastro cancelado ou falhou. Tente novamente.', 'error');
+          button.disabled = false;
+          button.textContent = '🚀 Iniciar Cadastro';
+        }
+      }
+
+      // Lança o fluxo de Embedded Signup
+      try {
+        FB.login(callback, signupOptions);
+      } catch (error) {
+        console.error('Error launching signup:', error);
+        showStatus('Erro ao iniciar o cadastro: ' + error.message, 'error');
+        button.disabled = false;
+        button.textContent = '🚀 Iniciar Cadastro';
+      }
+    }
+
+    // Função para mostrar mensagens de status
+    function showStatus(message, type) {
+      const status = document.getElementById('status');
+      status.textContent = message;
+      status.className = 'status ' + type;
+      status.style.display = 'block';
+    }
+
+    // Escuta mensagens de sucesso do popup
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'signup_success') {
+        showStatus('✅ Cadastro concluído com sucesso!', 'success');
+        console.log('Business Data:', event.data.data);
+      }
+    });
+
+    // Verifica se as credenciais foram configuradas
+    window.addEventListener('load', function() {
+      if (FACEBOOK_APP_ID === 'SEU_APP_ID_AQUI' || FACEBOOK_CONFIG_ID === 'SEU_CONFIG_ID_AQUI') {
+        showStatus('⚠️ ATENÇÃO: Configure as credenciais do Facebook no arquivo index.html', 'error');
+        document.getElementById('signup-button').disabled = true;
+      }
+    });
+  </script>
+</body>
+</html>

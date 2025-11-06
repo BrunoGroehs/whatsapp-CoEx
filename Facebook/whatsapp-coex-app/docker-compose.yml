@@ -1,0 +1,38 @@
+version: '3.8'
+
+services:
+  whatsapp-app:
+    build: .
+    container_name: whatsapp-coex-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - FACEBOOK_APP_ID=${FACEBOOK_APP_ID}
+      - FACEBOOK_APP_SECRET=${FACEBOOK_APP_SECRET}
+      - FACEBOOK_CONFIG_ID=${FACEBOOK_CONFIG_ID}
+      - WEBHOOK_VERIFY_TOKEN=${WEBHOOK_VERIFY_TOKEN}
+      - APP_URL=${APP_URL}
+    volumes:
+      # Persiste os dados dos negócios cadastrados
+      - ./data:/app/data
+      # Logs
+      - ./logs:/app/logs
+    networks:
+      - whatsapp-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  whatsapp-network:
+    driver: bridge
+
+volumes:
+  data:
+  logs:

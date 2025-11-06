@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp CoEx - Embedded Signup</title>
+    
+    <!-- Configuração da aplicação -->
+    <script src="/config.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #075E54;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .status-box {
+            background: #f0f0f0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-box.active {
+            display: block;
+        }
+
+        .status-box.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-box.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .status-box.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+
+        .whatsapp-button {
+            background-color: #25D366;
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 18px;
+            padding: 15px 30px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .whatsapp-button:hover {
+            background-color: #128C7E;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.4);
+        }
+
+        .whatsapp-button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .whatsapp-icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .logs-container {
+            margin-top: 30px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .logs-container h3 {
+            color: #075E54;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .log-entry {
+            background: white;
+            border-left: 4px solid #25D366;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .log-entry.error {
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+
+        .log-entry.success {
+            border-left-color: #28a745;
+            color: #155724;
+        }
+
+        .log-entry.info {
+            border-left-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .account-info {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #e7f5ff;
+            border-radius: 10px;
+        }
+
+        .account-info.active {
+            display: block;
+        }
+
+        .account-info h3 {
+            color: #075E54;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #ccc;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .info-value {
+            color: #333;
+            word-break: break-all;
+        }
+
+        .disconnect-button {
+            background-color: #dc3545;
+            border: 0;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 16px;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .disconnect-button:hover {
+            background-color: #c82333;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 14px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 WhatsApp CoEx</h1>
+            <p>Conecte seu WhatsApp Business com CoExistence</p>
+        </div>
+
+        <!-- Status Box -->
+        <div id="statusBox" class="status-box">
+            <p id="statusMessage"></p>
+        </div>
+
+        <!-- Botão de Conectar -->
+        <button id="connectButton" class="whatsapp-button" onclick="launchWhatsAppSignup()">
+            <svg class="whatsapp-icon" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+            </svg>
+            Conectar WhatsApp com CoEx
+        </button>
+
+        <!-- Informações da Conta -->
+        <div id="accountInfo" class="account-info">
+            <h3>📊 Conta Conectada</h3>
+            <div class="info-row">
+                <span class="info-label">WABA ID:</span>
+                <span class="info-value" id="wabaId">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Phone Number ID:</span>
+                <span class="info-value" id="phoneNumberId">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Nome Verificado:</span>
+                <span class="info-value" id="verifiedName">-</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Número:</span>
+                <span class="info-value" id="displayPhone">-</span>
+            </div>
+            <button class="disconnect-button" onclick="disconnectAccount()">
+                Desconectar Conta
+            </button>
+        </div>
+
+        <!-- Logs -->
+        <div class="logs-container">
+            <h3>📝 Logs de Eventos</h3>
+            <div id="logs"></div>
+        </div>
+
+        <div class="footer">
+            <p>WhatsApp CoEx v1.0.0 | Embedded Signup with Coexistence</p>
+        </div>
+    </div>
+
+    <!-- Facebook SDK -->
+    <script>
+        window.fbAsyncInit = function() {
+            FB.init({
+                appId: window.APP_CONFIG.FACEBOOK_APP_ID,
+                autoLogAppEvents: true,
+                xfbml: true,
+                version: window.APP_CONFIG.FACEBOOK_API_VERSION
+            });
+            addLog('✅ Facebook SDK carregado com sucesso', 'success');
+        };
+    </script>
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script>
+
+    <!-- App JavaScript -->
+    <script>
+        // Usar a configuração definida em config.js
+        const API_URL = window.APP_CONFIG.API_URL;
+
+        // Listener para MessageEvent (capturar dados do Embedded Signup)
+        window.addEventListener('message', (event) => {
+            if (event.origin !== "https://www.facebook.com" && event.origin !== "https://web.facebook.com") {
+                return;
+            }
+
+            try {
+                const data = JSON.parse(event.data);
+                
+                if (data.type === 'WA_EMBEDDED_SIGNUP') {
+                    // FINISH: Usuário completou o flow com sucesso
+                    if (data.event === 'FINISH') {
+                        const { phone_number_id, waba_id } = data.data;
+                        addLog(`✅ FINISH: Phone ID: ${phone_number_id}, WABA ID: ${waba_id}`, 'success');
+                        
+                        // Armazenar IDs
+                        localStorage.setItem('phone_number_id', phone_number_id);
+                        localStorage.setItem('waba_id', waba_id);
+                        
+                        showStatus('Cadastro finalizado! Aguardando autenticação...', 'info');
+                    }
+                    // CANCEL: Usuário cancelou
+                    else if (data.event === 'CANCEL') {
+                        const { current_step } = data.data;
+                        addLog(`⚠️ CANCEL: Cancelado na etapa: ${current_step}`, 'error');
+                        showStatus('Cadastro cancelado pelo usuário', 'error');
+                    }
+                    // ERROR: Erro durante o flow
+                    else if (data.event === 'ERROR') {
+                        const { error_message } = data.data;
+                        addLog(`❌ ERROR: ${error_message}`, 'error');
+                        showStatus(`Erro: ${error_message}`, 'error');
+                    }
+                }
+            } catch (error) {
+                console.error('Erro ao parsear mensagem:', error);
+            }
+        });
+
+        // Callback do Facebook Login
+        const fbLoginCallback = (response) => {
+            if (response.authResponse) {
+                const code = response.authResponse.code;
+                const phone_number_id = localStorage.getItem('phone_number_id');
+                const waba_id = localStorage.getItem('waba_id');
+                
+                addLog(`🔑 Código de autorização recebido`, 'info');
+                showStatus('Trocando código por token...', 'info');
+
+                // Enviar para backend
+                fetch(`${API_URL}/api/auth/exchange-code`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        code: code,
+                        phone_number_id: phone_number_id,
+                        waba_id: waba_id
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        addLog('✅ WhatsApp conectado com sucesso!', 'success');
+                        showStatus('WhatsApp conectado com sucesso! 🎉', 'success');
+                        
+                        // Exibir informações da conta
+                        displayAccountInfo(data.data);
+                        
+                        // Limpar localStorage
+                        localStorage.removeItem('phone_number_id');
+                        localStorage.removeItem('waba_id');
+                    } else {
+                        addLog(`❌ Erro: ${data.message}`, 'error');
+                        showStatus(`Erro: ${data.message}`, 'error');
+                    }
+                })
+                .catch(error => {
+                    addLog(`❌ Erro na requisição: ${error.message}`, 'error');
+                    showStatus(`Erro ao conectar: ${error.message}`, 'error');
+                });
+            } else {
+                addLog('❌ Falha na autenticação do Facebook', 'error');
+                showStatus('Falha na autenticação', 'error');
+            }
+        };
+
+        // Iniciar Embedded Signup
+        function launchWhatsAppSignup() {
+            addLog('🚀 Iniciando Embedded Signup...', 'info');
+            showStatus('Abrindo janela de autenticação...', 'info');
+
+            FB.login(fbLoginCallback, {
+                config_id: window.APP_CONFIG.WHATSAPP_CONFIG_ID,
+                response_type: 'code',
+                override_default_response_type: true,
+                extras: {
+                    setup: {},
+                    featureType: 'whatsapp_embedded_signup',
+                    sessionInfoVersion: 3
+                }
+            });
+        }
+
+        // Adicionar log
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry ${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.insertBefore(logEntry, logsDiv.firstChild);
+            
+            // Manter apenas os últimos 20 logs
+            while (logsDiv.children.length > 20) {
+                logsDiv.removeChild(logsDiv.lastChild);
+            }
+        }
+
+        // Mostrar status
+        function showStatus(message, type = 'info') {
+            const statusBox = document.getElementById('statusBox');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            statusBox.className = `status-box active ${type}`;
+            statusMessage.textContent = message;
+            
+            // Auto-ocultar após 5 segundos
+            setTimeout(() => {
+                statusBox.classList.remove('active');
+            }, 5000);
+        }
+
+        // Exibir informações da conta
+        function displayAccountInfo(data) {
+            const accountInfo = document.getElementById('accountInfo');
+            accountInfo.classList.add('active');
+            
+            document.getElementById('wabaId').textContent = data.wabaId || '-';
+            document.getElementById('phoneNumberId').textContent = data.phoneNumberId || '-';
+            document.getElementById('verifiedName').textContent = data.phoneInfo?.verified_name || '-';
+            document.getElementById('displayPhone').textContent = data.phoneInfo?.display_phone_number || '-';
+            
+            // Esconder botão de conectar
+            document.getElementById('connectButton').style.display = 'none';
+        }
+
+        // Desconectar conta
+        function disconnectAccount() {
+            const wabaId = document.getElementById('wabaId').textContent;
+            
+            if (!wabaId || wabaId === '-') {
+                showStatus('Nenhuma conta conectada', 'error');
+                return;
+            }
+
+            if (!confirm('Tem certeza que deseja desconectar esta conta?')) {
+                return;
+            }
+
+            fetch(`${API_URL}/api/auth/disconnect`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ waba_id: wabaId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    addLog('✅ Conta desconectada com sucesso', 'success');
+                    showStatus('Conta desconectada', 'success');
+                    
+                    // Esconder informações da conta
+                    document.getElementById('accountInfo').classList.remove('active');
+                    document.getElementById('connectButton').style.display = 'flex';
+                } else {
+                    showStatus(`Erro: ${data.message}`, 'error');
+                }
+            })
+            .catch(error => {
+                showStatus(`Erro: ${error.message}`, 'error');
+            });
+        }
+
+        // Verificar status ao carregar página
+        window.addEventListener('load', () => {
+            addLog('🌐 Página carregada', 'info');
+            
+            fetch(`${API_URL}/api/auth/status`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.connected && data.accounts && data.accounts.length > 0) {
+                        const account = data.accounts[0];
+                        addLog('✅ Conta já conectada detectada', 'success');
+                        // Pode buscar mais informações se necessário
+                    }
+                })
+                .catch(error => {
+                    console.log('Nenhuma conta conectada anteriormente');
+                });
+        });
+    </script>
+</body>
+</html>

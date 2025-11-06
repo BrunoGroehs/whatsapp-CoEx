@@ -1,6 +1,4 @@
-version: '3.8'
-
-services:
+﻿services:
   whatsapp-app:
     build: .
     container_name: whatsapp-coex-app

@@ -233,12 +233,11 @@
     </div>
   </div>
 
-  <!-- Facebook SDK -->
+  <!-- Script principal -->
   <script>
     // Configurações carregadas do servidor
     let FACEBOOK_APP_ID = '';
     let FACEBOOK_CONFIG_ID = '';
-    const REDIRECT_URI = window.location.origin + '/auth/callback';
 
     // Buscar configurações do servidor
     fetch('/api/config')
@@ -258,25 +257,6 @@
         showStatus('⚠️ Erro ao carregar configurações. Recarregue a página.', 'error');
         document.getElementById('signup-button').disabled = true;
       });
-
-    // Inicializa o Facebook SDK
-    window.fbAsyncInit = function() {
-      FB.init({
-        appId: FACEBOOK_APP_ID,
-        cookie: true,
-        xfbml: true,
-        version: 'v21.0'
-      });
-    };
-
-    // Carrega o SDK do Facebook
-    (function(d, s, id) {
-      var js, fjs = d.getElementsByTagName(s)[0];
-      if (d.getElementById(id)) return;
-      js = d.createElement(s); js.id = id;
-      js.src = "https://connect.facebook.net/pt_BR/sdk.js";
-      fjs.parentNode.insertBefore(js, fjs);
-    }(document, 'script', 'facebook-jssdk'));
 
     // Função para lançar o Embedded Signup
     function launchWhatsAppSignup() {

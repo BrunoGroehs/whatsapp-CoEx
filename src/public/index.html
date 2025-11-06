@@ -339,9 +339,11 @@
           override_default_response_type: true,
           extras: {
             setup: {
-              // Permite CoExistence - usar números do WhatsApp Business App
+              // Habilita CoExistence - crucial para usar números existentes
               coexistent_onboarding: true
-            }
+            },
+            feature: 'whatsapp_embedded_signup',
+            version: 2
           }
         });
       } catch (error) {

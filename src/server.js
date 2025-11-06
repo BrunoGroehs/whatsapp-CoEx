@@ -16,6 +16,28 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
+// Middleware de logging detalhado para debug
+app.use((req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.log(`\n${'='.repeat(60)}`);
+  console.log(`📥 ${req.method} ${req.path}`);
+  console.log(`⏰ ${timestamp}`);
+  console.log(`🌐 Origin: ${req.get('origin') || 'N/A'}`);
+  console.log(`📋 Headers:`, JSON.stringify({
+    'content-type': req.get('content-type'),
+    'user-agent': req.get('user-agent'),
+    'referer': req.get('referer')
+  }, null, 2));
+  if (Object.keys(req.query).length > 0) {
+    console.log(`🔍 Query:`, JSON.stringify(req.query, null, 2));
+  }
+  if (Object.keys(req.body).length > 0) {
+    console.log(`📦 Body:`, JSON.stringify(req.body, null, 2));
+  }
+  console.log(`${'='.repeat(60)}\n`);
+  next();
+});
+
 // Servir arquivos estáticos (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, 'public')));
 

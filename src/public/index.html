@@ -286,13 +286,15 @@
       
       // Extras com configuração de CoExistence v3
       const extras = {
-        featureType: 'whatsapp_business_app_onboarding', // Habilita CoExistence
-        sessionInfoVersion: '3',
-        version: 'v3'
+        featureType: 'whatsapp_embedded_signup', // Formato correto para CoExistence
+        sessionInfoVersion: '3'
       };
       signupUrl.searchParams.append('extras', JSON.stringify(extras));
+      
+      // IMPORTANTE: Adiciona redirect_uri como fallback
+      signupUrl.searchParams.append('redirect_uri', window.location.origin + '/auth/callback');
 
-      console.log('� URL Embedded Signup:', signupUrl.toString());
+      console.log('📍 URL Embedded Signup:', signupUrl.toString());
 
       // Abrir popup do Embedded Signup
       const width = 600;
@@ -313,89 +315,35 @@
         return;
       }
 
-      // Escutar mensagens do popup
+      // Escutar mensagens do popup - VERSÃO ROBUSTA
       const messageHandler = function(event) {
-        console.log('🔔 Evento recebido:', {
+        // Log TUDO que chegar para debugging
+        console.log('🔔 QUALQUER evento recebido:', {
           origin: event.origin,
           data: event.data,
+          type: typeof event.data,
+          keys: event.data ? Object.keys(event.data) : 'null',
           timestamp: new Date().toISOString()
         });
 
         // Verificar origem (aceita tanto business.facebook.com quanto www.facebook.com)
         if (!event.origin.includes('facebook.com')) {
-          console.warn('⚠️ Origem não confiável, ignorando:', event.origin);
-          return;
+          console.warn('⚠️ Origem não confiável, mas registrando:', event.origin);
+          // NÃO retorna aqui - vamos processar mesmo assim para debug
+        } else {
+          console.log('✅ Origem válida, processando mensagem...');
         }
 
-        console.log('✅ Origem válida, processando mensagem...');
+        // Tentar múltiplos formatos de evento
+        let signupData = null;
 
-        // Verificar se é callback de sucesso do Embedded Signup
+        // Formato 1: WA_EMBEDDED_SIGNUP padrão (v2)
         if (event.data && event.data.type === 'WA_EMBEDDED_SIGNUP') {
           console.log('📬 Tipo WA_EMBEDDED_SIGNUP detectado, evento:', event.data.event);
           
           if (event.data.event === 'FINISH') {
-            const data = event.data.data;
-            
-            console.log('✅ Embedded Signup concluído!', {
-              phone_number_id: data.phone_number_id,
-              waba_id: data.waba_id,
-              code: data.code ? 'presente' : 'ausente',
-              data_completo: data
-            });
-            
-            // Enviar dados para o backend
-            if (data.phone_number_id && data.waba_id) {
-              console.log('📤 Enviando dados para /auth/callback...');
-              
-              fetch('/auth/callback', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  phone_number_id: data.phone_number_id,
-                  waba_id: data.waba_id,
-                  code: data.code || null
-                })
-              })
-              .then(res => {
-                console.log('📥 Resposta recebida, status:', res.status);
-                return res.json();
-              })
-              .then(result => {
-                console.log('📊 Resultado processado:', result);
-                
-                if (result.success) {
-                  showStatus('✅ WhatsApp conectado com sucesso!', 'success');
-                  console.log('✅ Conta configurada:', result);
-                } else {
-                  showStatus('❌ Erro ao processar: ' + result.message, 'error');
-                  console.error('❌ Erro do servidor:', result);
-                }
-                button.disabled = false;
-                button.textContent = '🚀 Iniciar Cadastro';
-              })
-              .catch(error => {
-                console.error('❌ Erro na requisição:', error);
-                showStatus('❌ Erro na requisição: ' + error.message, 'error');
-                button.disabled = false;
-                button.textContent = '🚀 Iniciar Cadastro';
-              });
-            } else {
-              console.error('❌ Dados incompletos:', data);
-              showStatus('❌ Dados incompletos recebidos', 'error');
-              button.disabled = false;
-              button.textContent = '🚀 Iniciar Cadastro';
-            }
-            
-            // Fechar popup
-            console.log('🔒 Fechando popup...');
-            popup.close();
-            
-            // Remover listener
-            window.removeEventListener('message', messageHandler);
-            console.log('✅ Listener removido');
-            
+            console.log('✅ Formato 1: WA_EMBEDDED_SIGNUP FINISH');
+            signupData = event.data.data;
           } else if (event.data.event === 'CANCEL') {
             console.log('❌ Signup cancelado pelo usuário');
             showStatus('Cadastro cancelado', 'error');
@@ -403,16 +351,86 @@
             button.textContent = '🚀 Iniciar Cadastro';
             popup.close();
             window.removeEventListener('message', messageHandler);
+            return;
           } else if (event.data.event === 'ERROR') {
             console.error('❌ Erro reportado pelo Embedded Signup:', event.data);
             showStatus('❌ Erro: ' + (event.data.error || 'Erro desconhecido'), 'error');
             button.disabled = false;
             button.textContent = '🚀 Iniciar Cadastro';
+            return;
           } else {
-            console.log('ℹ️ Evento desconhecido:', event.data.event);
+            console.log('ℹ️ Evento WA_EMBEDDED_SIGNUP desconhecido:', event.data.event);
           }
+        }
+        
+        // Formato 2: Evento direto sem wrapper type (v3)
+        else if (event.data && (event.data.event === 'FINISH' || event.data.event === 'finish')) {
+          console.log('✅ Formato 2: Evento FINISH direto detectado');
+          signupData = event.data.data || event.data;
+        }
+        
+        // Formato 3: Dados diretos sem event wrapper (v3 alternativo)
+        else if (event.data && event.data.phone_number_id && event.data.waba_id) {
+          console.log('✅ Formato 3: Dados diretos detectados (sem wrapper)');
+          signupData = event.data;
+        }
+
+        // Se encontrou dados válidos, processar
+        if (signupData && (signupData.phone_number_id || signupData.waba_id)) {
+          console.log('📦 Dados de signup válidos encontrados:', {
+            phone_number_id: signupData.phone_number_id,
+            waba_id: signupData.waba_id,
+            code: signupData.code ? 'presente' : 'ausente',
+            data_completo: signupData
+          });
+          
+          // Enviar dados para o backend
+          console.log('📤 Enviando dados para /auth/callback...');
+          
+          fetch('/auth/callback', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              phone_number_id: signupData.phone_number_id,
+              waba_id: signupData.waba_id,
+              code: signupData.code || null
+            })
+          })
+          .then(res => {
+            console.log('📥 Resposta recebida, status:', res.status);
+            return res.json();
+          })
+          .then(result => {
+            console.log('📊 Resultado processado:', result);
+            
+            if (result.success) {
+              showStatus('✅ WhatsApp conectado com sucesso!', 'success');
+              console.log('✅ Conta configurada:', result);
+            } else {
+              showStatus('❌ Erro ao processar: ' + result.message, 'error');
+              console.error('❌ Erro do servidor:', result);
+            }
+            button.disabled = false;
+            button.textContent = '🚀 Iniciar Cadastro';
+          })
+          .catch(error => {
+            console.error('❌ Erro na requisição:', error);
+            showStatus('❌ Erro na requisição: ' + error.message, 'error');
+            button.disabled = false;
+            button.textContent = '🚀 Iniciar Cadastro';
+          });
+          
+          // Fechar popup
+          console.log('🔒 Fechando popup...');
+          popup.close();
+          
+          // Remover listener
+          window.removeEventListener('message', messageHandler);
+          console.log('✅ Listener removido');
         } else if (event.data) {
-          console.log('ℹ️ Mensagem de tipo diferente:', event.data.type || 'sem tipo');
+          console.log('ℹ️ Evento recebido mas sem dados válidos de signup:', event.data);
         }
       };
 
